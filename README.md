@@ -12,7 +12,7 @@ SenSante utilise le Machine Learning pour aider au pre-diagnostic des maladies c
 - notebooks/ : Scripts d'exploration
 
 ## Auteur
-Ndeye Maguette Diouf - L2 GLSIB - ESP / UCAD
+Maguette - L2 GLSIB - ESP / UCAD
 
 ## Cours
 Integration de Modeles IA - Dr. El Hadji Bassirou TOURE
