@@ -116,7 +116,7 @@
 
   <!-- Footer -->
   <footer class="text-center text-gray-400 text-sm py-4">
-    SenSante v0.3 - ESP/UCAD - L2 GLSI 2026
+    SenSante v0.4 - ESP/UCAD - L2 GLSI 2026
   </footer>
 
   <!-- JavaScript -->
@@ -177,7 +177,7 @@
 
   // ── Spinner de chargement ──
   function afficherChargement() {
-    const section = document.getElementById("result-section");
+    const section = document.getElementById("result-section"); 
     section.innerHTML = `
       <div class="bg-white rounded-xl shadow-md p-6 text-center">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -188,12 +188,12 @@
   // ── Affichage du resultat avec codes couleur ──
   function afficherResultat(r) {
     const couleurs = {
-      palu:   { bg:"bg-red-100",    text:"text-red-800",    bar:"bg-red-500",    badge:"bg-red-500"    },
+      palu:   { bg:"bg-red-100",    text:"text-red-800",    bar:"bg-red-500",    badge:"bg-red-500" },
       grippe: { bg:"bg-orange-100", text:"text-orange-800", bar:"bg-orange-500", badge:"bg-orange-500" },
-      typh:   { bg:"bg-yellow-100", text:"text-yellow-800", bar:"bg-yellow-500", badge:"bg-yellow-500" },
-      sain:   { bg:"bg-green-100",  text:"text-green-800",  bar:"bg-green-500",  badge:"bg-green-500"  }
-    };
-
+      typh:   { bg:"bg-yellow-100", text:"text-yellow-800", bar:"bg-yellow-500", badge:"bg-yellow-500", },
+      sain:   { bg:"bg-green-100",  text:"text-green-800",  bar:"bg-green-500",  badge:"bg-green-500",  }
+};
+    
     const c   = couleurs[r.diagnostic] || couleurs["sain"];
     const pct = Math.round(r.probabilite * 100);
 
@@ -231,6 +231,60 @@
           <p class="text-sm text-gray-700">${r.message}</p>
         </div>
       </div>`;
+
+    // NOUVEAU Lab 5 : demander l'explication du LLM
+    demanderExplication(r);
+  }
+
+  // ── NOUVEAU Lab 5 : appel a /explain (LLM Groq) ──
+  async function demanderExplication(diagnostic_data) {
+    const explainData = {
+      diagnostic:  diagnostic_data.diagnostic,
+      probabilite: diagnostic_data.probabilite,
+      age:         parseInt(document.getElementById("age").value),
+      sexe:        document.getElementById("sexe").value,
+      temperature: parseFloat(document.getElementById("temperature").value),
+      region:      document.getElementById("region").value
+    };
+
+    const section = document.getElementById("result-section");
+
+    // Placeholder "generation en cours"
+    const explDiv = document.createElement("div");
+    explDiv.id = "explication-zone";
+    explDiv.innerHTML = `
+      <div class="mt-4 bg-purple-50 rounded-lg p-4 border border-purple-200">
+        <p class="text-sm text-purple-600 font-medium mb-2">Explication (Llama 3)</p>
+        <p class="text-gray-500 text-sm animate-pulse">Generation en cours...</p>
+      </div>`;
+    section.querySelector(".bg-white").appendChild(explDiv);
+
+    try {
+      const response = await fetch(API_URL + "/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(explainData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        explDiv.innerHTML = `
+          <div class="mt-4 bg-purple-50 rounded-lg p-4 border border-purple-200">
+            <p class="text-sm text-purple-600 font-medium mb-2">Explication (Llama 3)</p>
+            <p class="text-gray-700 text-sm leading-relaxed">${result.explication}</p>
+          </div>`;
+      } else {
+        explDiv.innerHTML = `
+          <div class="mt-4 bg-gray-50 rounded-lg p-3">
+            <p class="text-gray-400 text-sm">Explication non disponible.</p>
+          </div>`;
+      }
+    } catch (error) {
+      explDiv.innerHTML = `
+        <div class="mt-4 bg-gray-50 rounded-lg p-3">
+          <p class="text-gray-400 text-sm">Explication non disponible.</p>
+        </div>`;
+    }
   }
 
   // ── Affichage erreur ──
