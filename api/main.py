@@ -7,6 +7,8 @@ import numpy as np
 import os
 from dotenv import load_dotenv
 from groq import Groq
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse 
 
 class PatientInput(BaseModel):
     age: int = Field(..., ge=0, le=120, description="Age en annees")
@@ -133,7 +135,7 @@ def predict(patient: PatientInput):
     # 5. Niveau de confiance
     if proba_max >= 0.7:
         confiance = "haute"
-    elif proba_max >= 0.4:
+    elif proba_max >= 0.4: 
         confiance = "moyenne"
     else:
         confiance = "faible"
@@ -156,15 +158,13 @@ def predict(patient: PatientInput):
 
 
 # --- NOUVEAU Lab 5 : endpoint /explain ---
-SYSTEM_PROMPT = """Tu es un assistant medical senegalais.
-Tu recois un diagnostic et des donnees patient.
-Explique le resultat en francais simple,
-comme un medecin parlerait a son patient.
-Sois rassurant mais recommande toujours
-une consultation medicale.
+SYSTEM_PROMPT = SYSTEM_PROMPT = """
+Tu es un assistant médical sénégalais.
+Réponds en français simple en mélangeant quelques mots en wolof.
+Sois rassurant.
+Recommande toujours une consultation médicale.
 Maximum 3 phrases.
-Ne fais JAMAIS de diagnostic toi-meme.
-Tu expliques uniquement le diagnostic fourni."""
+""" 
 
 @app.post("/explain", response_model=ExplainOutput)
 def explain(data: ExplainInput):
@@ -191,10 +191,16 @@ def explain(data: ExplainInput):
                 {"role": "user", "content": user_prompt}
             ],
             max_tokens=200,
-            temperature=0.3
+            temperature=0.3  
         )
         explication = response.choices[0].message.content
     except Exception as e:
         explication = f"Erreur lors de l'appel au LLM : {str(e)}"
 
     return ExplainOutput(explication=explication)
+
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+@app.get("/")
+def serve_frontend():
+    return FileResponse("frontend/index.html")
